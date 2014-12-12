@@ -186,80 +186,71 @@ class iBazPardakht extends PaymentModule
 	
 	public function prePayment()
 	{
+					
+		$purchase_currency = new Currency(Currency::getIdByIsoCode('IRR'));
+		$current_currency = new Currency($this->context->cookie->id_currency);			
+		if($current_currency->id == $purchase_currency->id)
+			$PurchaseAmount= number_format($this->context->cart->getOrderTotal(true, 3), 0, '', '');		 
+		else
+			$PurchaseAmount= number_format($this->convertPriceFull($this->context->cart->getOrderTotal(true, 3), $current_currency, $purchase_currency), 0, '', '');
+
+		$additionalData = "Cart Number: ".$this->context->cart->id." Customer ID: ".$this->context->cart->id_customer;
+		$params = array(
+					'terminalId' =>  Configuration::get('Bank_Mellat_TerminalId'),
+					'userName' => Configuration::get('Bank_Mellat_UserName'),
+					'userPassword' => Configuration::get('Bank_Mellat_UserPassword'),
+					'orderId' => ($this->context->cart->id).date('YmdHis'),
+					'amount' => (int)$PurchaseAmount,
+					'callBackUrl' => $this->context->link->getModuleLink('bankmellat', 'validation'),
+					'localDate' => date('Ymd'),
+					'localTime' => date("His"),
+					'additionalData' => $additionalData,
+					'payerId' => 0
+				  );
+
+		$res = $soapclient->call('bpPayRequest', $params, $this->_namespace);
+
+		if ($soapclient->fault OR $err = $soapclient->getError())
+		{
+			$this->_postErrors[] = $this->l('Could not connect to bank or service.');
+			$this->displayErrors();
+			return $this->_postErrors;
+		} 
+		else
+		{
+			// Display the result
+			if (is_array($res))
+				$ress = explode (',',$res['return']);
+			else
+				$ress = explode (',',$res);
+			$ResCode = $ress[0];
+			$RefId     = $ress[1];
+			if ($ResCode == "0")
+			{
+				$this->context->cookie->__set("RefId", $RefId);
+				$this->context->cookie->__set("amount", (int)$PurchaseAmount);
+
+				$this->context->smarty->assign(array(
+					'redirect_link' => $this->link,
+					'ref_id' => $RefId
+				));
+				return true;
+			} 
+			else {
+				$this->showMessages($ResCode);
+				return $this->_postErrors;
+			}
+
+		}
+			
 		$ch = curl_init();
 		curl_setopt($ch,CURLOPT_URL,$this->_post_url);
-		curl_setopt($ch,CURLOPT_POSTFIELDS,"id=$id&amount=$amount&callbac
-		k=$callback&resnum=$resnum");
+		curl_setopt($ch,CURLOPT_POSTFIELDS,"id=".$id."&amount=".$amount."&callbac
+		k=".$callback."&resnum=".$resnum);
 		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
 		curl_setopt($ch,CURLOPT_RETURNTRANSFER,true);
 		$res = curl_exec($ch);curl_close($ch);
 		return $res;
-
-		if (!$err = $soapclient->getError())
-			$soapProxy = $soapclient->getProxy() ;
-		if ( (!$soapclient) OR $err ) {
-				$this->_postErrors[] = $this->l('Could not connect to bank or service.');
-			   	return $this->_postErrors;
-  		}
-		else
-		{			
-			$purchase_currency = new Currency(Currency::getIdByIsoCode('IRR'));
-			$current_currency = new Currency($this->context->cookie->id_currency);			
-			if($current_currency->id == $purchase_currency->id)
-				$PurchaseAmount= number_format($this->context->cart->getOrderTotal(true, 3), 0, '', '');		 
-			else
-				$PurchaseAmount= number_format($this->convertPriceFull($this->context->cart->getOrderTotal(true, 3), $current_currency, $purchase_currency), 0, '', '');
-
-			$additionalData = "Cart Number: ".$this->context->cart->id." Customer ID: ".$this->context->cart->id_customer;
-		    $params = array(
-						'terminalId' =>  Configuration::get('Bank_Mellat_TerminalId'),
-						'userName' => Configuration::get('Bank_Mellat_UserName'),
-						'userPassword' => Configuration::get('Bank_Mellat_UserPassword'),
-						'orderId' => ($this->context->cart->id).date('YmdHis'),
-		                'amount' => (int)$PurchaseAmount,
-						'callBackUrl' => $this->context->link->getModuleLink('bankmellat', 'validation'),
-						'localDate' => date('Ymd'),
-						'localTime' => date("His"),
-						'additionalData' => $additionalData,
-						'payerId' => 0
-		              );
-
-			$res = $soapclient->call('bpPayRequest', $params, $this->_namespace);
-
-			if ($soapclient->fault OR $err = $soapclient->getError())
-			{
-				$this->_postErrors[] = $this->l('Could not connect to bank or service.');
-			   	$this->displayErrors();
-				return $this->_postErrors;
-			} 
-			else
-			{
-				// Display the result
-				if (is_array($res))
-					$ress = explode (',',$res['return']);
-				else
-					$ress = explode (',',$res);
-				$ResCode = $ress[0];
-				$RefId     = $ress[1];
-				if ($ResCode == "0")
-				{
-					$this->context->cookie->__set("RefId", $RefId);
-					$this->context->cookie->__set("amount", (int)$PurchaseAmount);
-
-					$this->context->smarty->assign(array(
-						'redirect_link' => $this->link,
-						'ref_id' => $RefId
-					));
-					return true;
-				} 
-				else {
-					$this->showMessages($ResCode);
-					return $this->_postErrors;
-				}
-
-			}
-
-        }
 
 	}
 
