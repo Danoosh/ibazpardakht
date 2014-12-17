@@ -1,6 +1,6 @@
 <?php 
 /*
-* 2013 Presta-Shop.ir
+* iPresta.ir
 *
 * Do not edit or remove author copyright
 * if you have any problem contact us at iPresta.ir
@@ -15,8 +15,9 @@ class iBazPardakht extends PaymentModule
 {  
 	private $_html = '';
 
-	private  $_post_url = 'http://bazpardakht.com/webservice/index.php';
+	private  $_service_url = 'http://bazpardakht.com/webservice/index.php';
 	private $_go_url = 'http://bazpardakht.com/webservice/go.php';
+    private $_verify_url = 'http://bazpardakht.com/webservice/verify.php';
 
 	public function __construct(){  
 		$this->name = 'ibazpardakht';  
@@ -39,14 +40,11 @@ class iBazPardakht extends PaymentModule
 		$config = Configuration::getMultiple(array('IPRESTA_BAZPARDAKHT_UserName', 'IPRESTA_BAZPARDAKHT_UserPassword'));			
 		if (!isset($config['IPRESTA_BAZPARDAKHT_UserName']))
 			$this->warning = $this->l('Your BazPardakht username must be configured in order to use this module');
-		if (!isset($config['IPRESTA_BAZPARDAKHT_UserPassword']))
-			$this->warning = $this->l('Your BazPardakht password must be configured in order to use this module');
 
 	}  
 	public function install(){
 		if (!parent::install()
 	    	OR !Configuration::updateValue('IPRESTA_BAZPARDAKHT_USER', '')
-			OR !Configuration::updateValue('IPRESTA_BAZPARDAKHT_PASSWORD', '')
 			OR !Configuration::updateValue('IPRESTA_BAZPARDAKHT_TEST', 0)
             OR !Configuration::updateValue('IPRESTA_BAZPARDAKHT_DEBUG', 0)
 	      	OR !$this->registerHook('payment')
@@ -58,7 +56,6 @@ class iBazPardakht extends PaymentModule
 	}
 	public function uninstall(){
 		if (!Configuration::deleteByName('IPRESTA_BAZPARDAKHT_USER') 
-			OR !Configuration::deleteByName('IPRESTA_BAZPARDAKHT_PASSWORD')
             OR !Configuration::deleteByName('IPRESTA_BAZPARDAKHT_TEST')
 			OR !Configuration::deleteByName('IPRESTA_BAZPARDAKHT_DEBUG')
 			OR !parent::uninstall())
@@ -77,14 +74,9 @@ class iBazPardakht extends PaymentModule
 				'input' => array(
 					array(
 						'type' => 'text',
-						'label' => $this->l('User Name'),
+						'label' => $this->l('Merchant Code'),
 						'name' => 'IPRESTA_BAZPARDAKHT_USER',
 						'class' => 'fixed-width-lg',
-					),
-					array(
-						'type' => 'password',
-						'label' => $this->l('Password'),
-						'name' => 'IPRESTA_BAZPARDAKHT_PASSWORD',
 					),
 					array(
 						'type' => 'switch',
@@ -134,28 +126,8 @@ class iBazPardakht extends PaymentModule
 	{
 		return array(
 			'IPRESTA_BAZPARDAKHT_USER' => Tools::getValue('IPRESTA_BAZPARDAKHT_USER', Configuration::get('IPRESTA_BAZPARDAKHT_USER')),
-			'IPRESTA_BAZPARDAKHT_PASSWORD' => Tools::getValue('IPRESTA_BAZPARDAKHT_PASSWORD', Configuration::get('IPRESTA_BAZPARDAKHT_PASSWORD')),
 			'IPRESTA_BAZPARDAKHT_DEBUG' => Tools::getValue('IPRESTA_BAZPARDAKHT_DEBUG', (bool)Configuration::get('IPRESTA_BAZPARDAKHT_DEBUG')),
 		);
-	}
-
-
-
-	public function copyRight()
-	{
-		$this->_html .= '
-
-		<center><input type="submit" name="submitCheck" value="'.$this->l('بررسی امکان اتصال به وب سرویس').'" class="button" />
-		<p style="text-align:center;">این عمل ممکن است مدتی طول بکشد. شکیبا باشید.</p></center>
-		</fieldset></form>
-		<p></p>
-		<fieldset>		
-		<legend>اطلاعات</legend>
-		<p><a href="http://presta-shop.ir/forum/Thread-2487.html"> + پشتیبانی در انجمن</a></p>
-		<p> + کپی رایت : <a href="http://presta-shop.ir">پرستاشاپ پارسی</a></p>
-		<p> + نویسنده: دانوش میرعلایی مطلق</p>
-		</fieldset>
-		';
 	}
 
 
@@ -166,15 +138,11 @@ class iBazPardakht extends PaymentModule
 		if (isset($_POST['submitBazPardakht']))
 		{
 			if (empty($_POST['IPRESTA_BAZPARDAKHT_USER']))
-				$errors[] = $this->l('Your username is required.');
+				$errors[] = $this->l('Your merchant code is required.');
 
-			if (empty($_POST['IPRESTA_BAZPARDAKHT_PASSWORD']))
-				$errors[] = $this->l('Your password is required.');
 			if (!count($errors))
 			{
 				Configuration::updateValue('IPRESTA_BAZPARDAKHT_USER', $_POST['IPRESTA_BAZPARDAKHT_USER']);
-				Configuration::updateValue('IPRESTA_BAZPARDAKHT_PASSWORD', $_POST['IPRESTA_BAZPARDAKHT_PASSWORD']);
-    //            Configuration::updateValue('IPRESTA_BAZPARDAKHT_TEST', $_POST['IPRESTA_BAZPARDAKHT_TEST']);
 				Configuration::updateValue('IPRESTA_BAZPARDAKHT_DEBUG', $_POST['IPRESTA_BAZPARDAKHT_DEBUG']);
 				$output = $this->displayConfirmation($this->l('Your settings have been updated.'));
 			}
@@ -190,295 +158,101 @@ class iBazPardakht extends PaymentModule
 		$purchase_currency = new Currency(Currency::getIdByIsoCode('IRR'));
 		$current_currency = new Currency($this->context->cookie->id_currency);			
 		if($current_currency->id == $purchase_currency->id)
-			$PurchaseAmount= number_format($this->context->cart->getOrderTotal(true, 3), 0, '', '');		 
+            $amount = number_format($this->context->cart->getOrderTotal(true, 3), 0, '', '');
 		else
-			$PurchaseAmount= number_format($this->convertPriceFull($this->context->cart->getOrderTotal(true, 3), $current_currency, $purchase_currency), 0, '', '');
+            $amount = number_format($this->convertPriceFull($this->context->cart->getOrderTotal(true, 3), $current_currency, $purchase_currency), 0, '', '');
 
-		$additionalData = "Cart Number: ".$this->context->cart->id." Customer ID: ".$this->context->cart->id_customer;
-		$params = array(
-					'terminalId' =>  Configuration::get('Bank_Mellat_TerminalId'),
-					'userName' => Configuration::get('Bank_Mellat_UserName'),
-					'userPassword' => Configuration::get('Bank_Mellat_UserPassword'),
-					'orderId' => ($this->context->cart->id).date('YmdHis'),
-					'amount' => (int)$PurchaseAmount,
-					'callBackUrl' => $this->context->link->getModuleLink('bankmellat', 'validation'),
-					'localDate' => date('Ymd'),
-					'localTime' => date("His"),
-					'additionalData' => $additionalData,
-					'payerId' => 0
-				  );
+        $id = Configuration::get('IPRESTA_BAZPARDAKHT_USER');
+        $callback = $this->context->link->getModuleLink('ibazpardakht', 'validation');
+        $res_num = substr(uniqid($this->context->cart->id.date('ymdHis')),0,8);
 
-		$res = $soapclient->call('bpPayRequest', $params, $this->_namespace);
+        try
+        {
+            $ch = curl_init();
+            curl_setopt($ch,CURLOPT_URL,$this->_service_url);
+            curl_setopt($ch,CURLOPT_POSTFIELDS,"id=".$id."&amount=".$amount."&callback=".$callback."&resnum=".$res_num);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
+            curl_setopt($ch,CURLOPT_RETURNTRANSFER,true);
+            $result = curl_exec($ch);curl_close($ch);
+        }
+        catch(PrestaShopException $e){
+            $this->context->controller->errors[] = $this->l('Could not connect to bank or service.');
+            return false;
+        }
 
-		if ($soapclient->fault OR $err = $soapclient->getError())
-		{
-			$this->_postErrors[] = $this->l('Could not connect to bank or service.');
-			$this->displayErrors();
-			return $this->_postErrors;
-		} 
+        if(isset($result) && $result > 0)
+        {
+            $this->context->cookie->__set("RefId", $res_num);
+            $this->context->cookie->__set("amount", (int)$amount);
+
+            $this->context->smarty->assign(array(
+                'redirect_link' => $this->_go_url,
+                'ref_id' => $result
+            ));
+            return true;
+        }
+
+ //       return $res;
+
 		else
 		{
-			// Display the result
-			if (is_array($res))
-				$ress = explode (',',$res['return']);
-			else
-				$ress = explode (',',$res);
-			$ResCode = $ress[0];
-			$RefId     = $ress[1];
-			if ($ResCode == "0")
-			{
-				$this->context->cookie->__set("RefId", $RefId);
-				$this->context->cookie->__set("amount", (int)$PurchaseAmount);
-
-				$this->context->smarty->assign(array(
-					'redirect_link' => $this->link,
-					'ref_id' => $RefId
-				));
-				return true;
-			} 
-			else {
-				$this->showMessages($ResCode);
-				return $this->_postErrors;
-			}
-
+            $this->context->controller->errors[] = $this->showMessages($result);
+            return false;
 		}
 			
-		$ch = curl_init();
-		curl_setopt($ch,CURLOPT_URL,$this->_post_url);
-		curl_setopt($ch,CURLOPT_POSTFIELDS,"id=".$id."&amount=".$amount."&callbac
-		k=".$callback."&resnum=".$resnum);
-		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
-		curl_setopt($ch,CURLOPT_RETURNTRANSFER,true);
-		$res = curl_exec($ch);curl_close($ch);
-		return $res;
+
 
 	}
 
-	public function verify($saleOrderId,$saleReferenceId,$soapclient = NULL)
+	public function verify($res_num,$ref_num)
 	{
-		if(!$soapclient)
-		{	
-			include_once('lib/nusoap.php');
-			$soapclient = new nusoap_client($this->webservice,'wsdl');
-		}
+        $id = Configuration::get('IPRESTA_BAZPARDAKHT_USER');
+        $purchase_currency = new Currency(Currency::getIdByIsoCode('IRR'));
+        $current_currency = new Currency($this->context->cookie->id_currency);
+        if($current_currency->id == $purchase_currency->id)
+            $amount = number_format($this->context->cart->getOrderTotal(true, 3), 0, '', '');
+        else
+            $amount = number_format($this->convertPriceFull($this->context->cart->getOrderTotal(true, 3), $current_currency, $purchase_currency), 0, '', '');
+        try
+        {
+            $ch = curl_init();
+            curl_setopt($ch,CURLOPT_URL,$this->_verify_url);
+            curl_setopt($ch,CURLOPT_POSTFIELDS,"id=".$id."&resnum=".$res_num."&refnum=".$ref_num."&amount=".$amount);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
+            curl_setopt($ch,CURLOPT_RETURNTRANSFER,true);
+            $result = curl_exec($ch);
+            curl_close($ch);
+        }
+        catch(PrestaShopException $e){
+            $this->context->controller->errors[] = $this->l('Could not connect to bank or service.');
+            return false;
+        }
 
-		if (!$soapclient)
-		{
-			$this->_postErrors[] = $this->l('اتصال به بانک برقرار نشد');
-			// if(!empty($err))
-				// $this->_postErrors[] = $err;
-			return $this->_postErrors;
-			// return $return;
-		}
+        if(isset($result) && $result > 0)
+            return true;
 
-		// Params For Verify
-		$params = array(
-			'terminalId' =>  Configuration::get('Bank_Mellat_TerminalId'),
-			'userName' => Configuration::get('Bank_Mellat_UserName'),
-			'userPassword' => Configuration::get('Bank_Mellat_UserPassword'),
-			'orderId' => ($this->context->cart->id).date('YmdHis'),
-			'saleOrderId' => $saleOrderId,
-			'saleReferenceId' => $saleReferenceId
-		);
-
-		$result = $soapclient->call('bpVerifyRequest', $params, $this->_namespace);
-
-		if ($soapclient->fault OR $err = $soapclient->getError())
-		{
-			$this->_postErrors[] = $this->l('Could not connect to bank or service.');
-			return $this->_postErrors;
-		} 
-		if ($result['return'] != "0"){
-			$this->showMessages($result['return']);
-			return $this->_postErrors;
-		}
-		return true;
+        return false;
 	}
 
-	public function settle($saleOrderId,$saleReferenceId, $soapclient = NULL)
-	{
-		if(!$soapclient)
-		{	
-			include_once('lib/nusoap.php');
-			$soapclient = new nusoap_client($this->webservice,'wsdl');
-		}
 
-		if (!$soapclient)
-		{
-			$this->_postErrors[] = $this->l('اتصال به بانک برقرار نشد');
-			// if(!empty($err))
-				// $this->_postErrors[] = $err;
-			return $this->_postErrors;
-			// return $return;
-		}
-
-		//Params for settle
-		$params = array(
-			'terminalId' =>  Configuration::get('Bank_Mellat_TerminalId'),
-			'userName' => Configuration::get('Bank_Mellat_UserName'),
-			'userPassword' => Configuration::get('Bank_Mellat_UserPassword'),
-			'orderId' => ($this->context->cart->id).date('YmdHis'),
-			'saleOrderId' => $saleOrderId,
-			'saleReferenceId' => $saleReferenceId
-		);
-
-		$result = $soapclient->call('bpSettleRequest', $params, $this->_namespace);
-		if ($soapclient->fault OR $err = $soapclient->getError())
-		{
-			$this->_postErrors[] = $this->l('Could not connect to bank or service.');
-			return $this->_postErrors;
-		} 
-
-
-		if ($result['return'] != "0"){
-			$this->showMessages($result['return']);
-			return $this->_postErrors;
-			//return $return;
-		}
-		return true;
-	}
-
-	public function inquiry($saleOrderId,$saleReferenceId, $soapclient =NULL)
-	{
-		if(!$soapclient)
-		{	include_once('lib/nusoap.php');
-			$soapclient = new nusoap_client($this->webservice,'wsdl');
-		}
-
-		if (!$soapclient)
-		{
-			$this->_postErrors[] = $this->l('اتصال به بانک برقرار نشد');
-			// if(!empty($err))
-				// $this->_postErrors[] = $err;
-			return $this->_postErrors;
-			// return $return;
-		}
-
-		//Params for inquiry
-		$params = array(
-			'terminalId' =>  Configuration::get('Bank_Mellat_TerminalId'),
-			'userName' => Configuration::get('Bank_Mellat_UserName'),
-			'userPassword' => Configuration::get('Bank_Mellat_UserPassword'),
-			'orderId' => ($this->context->cart->id).date('YmdHis'),
-			'saleOrderId' => $saleOrderId,
-			'saleReferenceId' => $saleReferenceId
-		);
-
-		$result = $soapclient->call('bpInquiryRequest', $params, $this->_namespace);
-		if ($soapclient->fault OR $err = $soapclient->getError())
-		{
-			$this->_postErrors[] = $this->l('Could not connect to bank or service.');
-			return $this->_postErrors;
-		} 
-
-		if ($result['return'] != "0"){
-			$this->showMessages($result['return']);
-			return $this->_postErrors;
-		}
-		return true;
-	}
-
-	public function reverse($saleOrderId,$saleReferenceId, $soapclient = NULL)
-	{
-		if(!$soapclient)
-		{	include_once('lib/nusoap.php');
-			$soapclient = new nusoap_client($this->webservice,'wsdl');
-		}
-
-		if (!$soapclient)
-		{
-			$this->_postErrors[] = $this->l('اتصال به بانک برقرار نشد');
-			// if(!empty($err))
-				// $this->_postErrors[] = $err;
-			return $this->_postErrors;
-			// return $return;
-		}
-
-		//Params for reversal
-		$params = array(
-			'terminalId' =>  Configuration::get('Bank_Mellat_TerminalId'),
-			'userName' => Configuration::get('Bank_Mellat_UserName'),
-			'userPassword' => Configuration::get('Bank_Mellat_UserPassword'),
-			'orderId' => ($this->context->cart->id).date('YmdHis'),
-			'saleOrderId' => $saleOrderId,
-			'saleReferenceId' => $saleReferenceId
-		);
-
-		$result = $soapclient->call('bpReversalRequest', $params, $this->_namespace);
-		if ($soapclient->fault OR $err = $soapclient->getError())
-		{
-			$this->_postErrors[] = $this->l('Could not connect to bank or service.');
-			return $this->_postErrors;
-		} 
-
-		if ($result['return'] != "0"){
-			$this->showMessages($result['return']);
-			return $this->_postErrors;
-		}
-		return true;
-	}
 
 	public function showMessages($result)
 	{                
-		switch($result)
+		$err = 'Error!';
+        switch($result)
 		{ 
-			case 0:  $this->_postErrors[]=$this->l('تراکنش با موفقیت انحام شد'); break;
-			case 11: $this->_postErrors[]=$this->l('شماره کارت نامعتبر است'); break;
-			case 12: $this->_postErrors[]=$this->l('موجودی کافی نیست'); break;
-			case 13: $this->_postErrors[]=$this->l('رمز نادرست است'); break;  
-			case 14: $this->_postErrors[]=$this->l('تعداد دفعات وارد کردن رمز بیش از حد مجاز است'); break;    
-			case 15: $this->_postErrors[]=$this->l('کارت نامعتبر است'); break;
-			case 16: $this->_postErrors[]=$this->l('دفعات برداشت وجه بیش از حد مجاز است'); break;
-			case 17: $this->_postErrors[]=$this->l('کاربر از انجام تراکنش منصرف شده است'); break;
-			case 18: $this->_postErrors[]=$this->l('تاریخ انقضای کارت گذشته است'); break;
-			case 19: $this->_postErrors[]=$this->l('مبلغ برداشت وجه بیش از حد مجاز است'); break;
-			case 111: $this->_postErrors[]=$this->l('صادر کننده کارت نامعتبر است'); break;
-			case 112: $this->_postErrors[]=$this->l('خطای سوییچ صادر کننده کارت'); break;
-			case 113: $this->_postErrors[]=$this->l('پاسخی از صادر کننده کارت دریافت نشد'); break;
-			case 114: $this->_postErrors[]=$this->l('دارنده کارت مجاز به انجام این تراکنش نیست'); break;
-			case 21: $this->_postErrors[]=$this->l('پذیرنده نامعتبر است'); break;
-			case 23: $this->_postErrors[]=$this->l('خطای امنیتی رخ داده است'); break;
-			case 24: $this->_postErrors[]=$this->l('اطلاعات کاربری پذیرنده نامعتبر است'); break;
-			case 25: $this->_postErrors[]=$this->l('مبلغ نامعتبر است'); break;
-			case 31: $this->_postErrors[]=$this->l('پاسخ نامعتبر است'); break;
-			case 32: $this->_postErrors[]=$this->l('فرمت اطلاعات وارد شده صحیح نمی باشد'); break;
-			case 33: $this->_postErrors[]=$this->l('حساب نامعتبر است'); break;
-			case 34: $this->_postErrors[]=$this->l('خطای سیستمی'); break;
-			case 35: $this->_postErrors[]=$this->l('تاریخ نامعتبر است'); break;
-			case 41: $this->_postErrors[]=$this->l('شماره درخواست تکراری است'); break;
-			case 42: $this->_postErrors[]=$this->l('تراکنش Sale یافت نشد'); break;
-			case 43: $this->_postErrors[]=$this->l('قبلا درخواست Verify داده شده است'); break;
-			case 44: $this->_postErrors[]=$this->l('درخواست Verify یافت نشد'); break;
-			case 45: $this->_postErrors[]=$this->l('تراکنش Settle شده است'); break;
-			case 46: $this->_postErrors[]=$this->l('تراکنش Settle نشده است'); break;
-			case 47: $this->_postErrors[]=$this->l('تراکنش Settle یافت نشد'); break;
-			case 48: $this->_postErrors[]=$this->l('تراکنش Reverse شده است'); break;
-			case 49: $this->_postErrors[]=$this->l('تراکنش Refund یافت شند'); break;
-			case 412: $this->_postErrors[]=$this->l('شناسه قبض نادرست است'); break;
-			case 413: $this->_postErrors[]=$this->l('شناسه پرداخت نادرست است'); break;
-			case 414: $this->_postErrors[]=$this->l('سازمان صادر کننده قبض نامعتبر است'); break;
-			case 415: $this->_postErrors[]=$this->l('زمان جلسه کاری به پایان رسیده است'); break;
-			case 416: $this->_postErrors[]=$this->l('خطا در ثبت اطلاعات'); break;
-			case 417: $this->_postErrors[]=$this->l('شناسه پرداخت کننده نامعتبر است'); break;
-			case 418: $this->_postErrors[]=$this->l('اشکال در تعریف اطلاعات مشتری'); break;
-			case 419: $this->_postErrors[]=$this->l('تعداد دفعات ورود اطلاعات از حد مجاز گذشته است'); break;
-			case 421: $this->_postErrors[]=$this->l('IP نامعتبر است'); break;
-			case 51: $this->_postErrors[]=$this->l('تراکنش تکراری است'); break;
-			case 54: $this->_postErrors[]=$this->l('تراکنش مرجع موجود نیست'); break;
-			case 55: $this->_postErrors[]=$this->l('تراکنش نامعتبر است'); break;
-			case 61: $this->_postErrors[]=$this->l('خطا در واریز'); break;
+			case -1: $err = $this->l('کدپذیرنده صحیح نمی باشد یا درگاه پذیرنده فعال نیست'); break;
+			case -2: $err = $this->l('مقدار مبلغ صحیح نمی باشد یا کمتر از 100 تومان می باشد'); break;
+			case -3: $err = $this->l('آدرس بازگشت صحیح نمی باشد'); break;
+			case -4: $err = $this->l('درگاه پذیرنده فعال نمی باشد'); break;
+			case -5: $err = $this->l('شماره فاکتور صحیح نمی باشد'); break;
+			case -6: $err = $this->l('شماره فاکتور تکراري می باشد'); break;
+			case -7: $err = $this->l('مشکل در شبکه بانکی وجود دارد'); break;
+
 			}
-		return $this->_postErrors;
+		return $err;
 	}
 
-	// to show only one error
-	public function showErrorMessages($result)
-	{
-		$Message = $this->showMessages($result);
-		$this->_html = '';
-		$this->_postErrors = array();
-		return $Message;
-	}
 
 	public function hookPayment($params){
 		if (!$this->active)
@@ -486,10 +260,22 @@ class iBazPardakht extends PaymentModule
 		return $this->display(__FILE__, 'payment.tpl');
 	}
 
-	public function hookPaymentReturn($params)
-	{
-		return ;
-	}
+    public function hookPaymentReturn($params)
+    {
+        if (!$this->active)
+            return ;
+
+        $order = new Order(Tools::getValue('id_order'));
+
+        $this->context->smarty->assign(array(
+            'ref_num' => Tools::getValue('ref_num'),
+            'res_num' => Tools::getValue('res_num'),
+            'ver' => $this->version,
+
+        ));
+
+        return $this->display(__FILE__, 'confirmation.tpl');
+    }
 
 	/**
 	 *

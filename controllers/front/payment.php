@@ -1,12 +1,12 @@
 <?php
 /*
-* 2013 Presta-Shop.ir
+* iPresta.ir
 *
 *
-*  @author Presta-Shop.ir - Danoosh Miralayi
-*  @copyright  2013 Presta-Shop.ir
+*  @author iPresta.ir - Danoosh Miralayi
+*  @copyright  2014-2015 iPresta.ir
 */
-class BankMellatPaymentModuleFrontController extends ModuleFrontController
+class iBazPardakhtPaymentModuleFrontController extends ModuleFrontController
 {
 	
 	public function __construct()
@@ -30,7 +30,7 @@ class BankMellatPaymentModuleFrontController extends ModuleFrontController
 	
 	public function postProcess()
 	{
-		$displayErrors = Configuration::get('Bank_Mellat_phpDisplayErrors');
+		$displayErrors = Configuration::get('IPRESTA_BAZPARDAKHT_DEBUG');
 		if($displayErrors)
 			@ini_set('display_errors', 'on');
 	} 
@@ -42,7 +42,6 @@ class BankMellatPaymentModuleFrontController extends ModuleFrontController
 		$return = $this->module->prePayment();
 		if($return === true)
 			$this->context->smarty->assign('prepay', 'true');
-		else $this->errors = $return;
 		return $this->setTemplate('payment.tpl');
 	}
 	

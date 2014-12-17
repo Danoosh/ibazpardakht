@@ -1,7 +1,7 @@
-<!-- Mellat Payment Module -->
+<!-- iPresta BazPardakht Payment Module -->
 <p class="payment_module">
-    <a href="{$link->getModuleLink('bankmellat', 'payment')}" title="{l s='Pay by Mellat' mod='bankmellat'}">
-        <img src="{$module_dir}/mellat.png" alt="{l s='Pay by Mellat' mod='bankmellat'}" />
-		{l s='Pay by Debit/Credit card through Mellat Online Merchent.' mod='bankmellat'}
+    <a href="{$link->getModuleLink('ibazpardakht', 'payment')}" title="{l s='Pay by BazPardakht' mod='ibazpardakht'}">
+        <img src="{$module_dir}/logo.png" alt="{l s='Pay by BazPardakht' mod='ibazpardakht'}" />
+		{l s='Pay by Debit/Credit card through BazPardakht Online Merchent.' mod='ibazpardakht'}
 </a></p>
-<!-- End of Mellat Payment Module-->
+<!-- End of iPresta Bazpardakht Payment Module-->
