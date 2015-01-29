@@ -20,16 +20,16 @@ class iBazPardakht extends PaymentModule
     private $_verify_url = 'http://bazpardakht.com/webservice/verify.php';
 
 	public function __construct(){  
-		$this->name = 'ibazpardakht';  
+		$this->name = 'ibazpardakht';
 		$this->tab = 'payments_gateways';
-		$this->version = '1.0';
+		$this->version = '1.1';
 		$this->bootstrap = true;
 		$this->author = 'iPresta.ir';
 
 		$this->currencies = true;
   		$this->currencies_mode = 'checkbox';
 
-		parent::__construct();  		
+		parent::__construct();
 		$this->context = Context::getContext();
 		$this->page = basename(__FILE__, '.php');
 		$this->displayName = $this->l('Bazpardakht Payment');  
@@ -164,16 +164,16 @@ class iBazPardakht extends PaymentModule
 
         $id = Configuration::get('IPRESTA_BAZPARDAKHT_USER');
         $callback = $this->context->link->getModuleLink('ibazpardakht', 'validation');
-        $res_num = substr(uniqid($this->context->cart->id.date('ymdHis')),0,8);
-
-        try
+        $res_num = substr($this->context->cart->id.rand(),-8);
+       try
         {
             $ch = curl_init();
             curl_setopt($ch,CURLOPT_URL,$this->_service_url);
-            curl_setopt($ch,CURLOPT_POSTFIELDS,"id=".$id."&amount=".$amount."&callback=".$callback."&resnum=".$res_num);
+            curl_setopt($ch,CURLOPT_POSTFIELDS,"id=".$id."&amount=".(int)($amount / 10)."&callback=".$callback."&resnum=".$res_num);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
             curl_setopt($ch,CURLOPT_RETURNTRANSFER,true);
-            $result = curl_exec($ch);curl_close($ch);
+            $result = curl_exec($ch);
+			curl_close($ch);
         }
         catch(PrestaShopException $e){
             $this->context->controller->errors[] = $this->l('Could not connect to bank or service.');
@@ -215,13 +215,13 @@ class iBazPardakht extends PaymentModule
             $amount = number_format($this->convertPriceFull($this->context->cart->getOrderTotal(true, 3), $current_currency, $purchase_currency), 0, '', '');
         try
         {
-            $ch = curl_init();
-            curl_setopt($ch,CURLOPT_URL,$this->_verify_url);
-            curl_setopt($ch,CURLOPT_POSTFIELDS,"id=".$id."&resnum=".$res_num."&refnum=".$ref_num."&amount=".$amount);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
-            curl_setopt($ch,CURLOPT_RETURNTRANSFER,true);
-            $result = curl_exec($ch);
-            curl_close($ch);
+            $ch2 = curl_init();
+            curl_setopt($ch2,CURLOPT_URL,$this->_verify_url);
+            curl_setopt($ch2,CURLOPT_POSTFIELDS,"id=".$id."&resnum=".$res_num."&refnum=".$ref_num."&amount=".(int)($amount / 10));
+            curl_setopt($ch2, CURLOPT_SSL_VERIFYPEER, FALSE);
+            curl_setopt($ch2,CURLOPT_RETURNTRANSFER,true);
+            $result = curl_exec($ch2);
+            curl_close($ch2);
         }
         catch(PrestaShopException $e){
             $this->context->controller->errors[] = $this->l('Could not connect to bank or service.');
@@ -230,6 +230,8 @@ class iBazPardakht extends PaymentModule
 
         if(isset($result) && $result > 0)
             return true;
+		elseif(isset($result) && $result <= 0)
+			return $result;
 
         return false;
 	}
@@ -268,7 +270,9 @@ class iBazPardakht extends PaymentModule
         $order = new Order(Tools::getValue('id_order'));
 
         $this->context->smarty->assign(array(
-            'ref_num' => Tools::getValue('ref_num'),
+            'id_order' => Tools::getValue('id_order'),
+			'reference' => $order->reference,
+			'ref_num' => Tools::getValue('ref_num'),
             'res_num' => Tools::getValue('res_num'),
             'ver' => $this->version,
 

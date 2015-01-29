@@ -51,10 +51,13 @@ class iBazPardakhtValidationModuleFrontController extends ModuleFrontController
 			if($validate === true)
 				$paid = $this->module->validateOrder((int)$this->context->cart->id, _PS_OS_PAYMENT_, (float)$this->context->cart->getOrderTotal(true, 3), $this->module->displayName, $this->module->l('reference').': '.$this->ref_num , array(),(int)$this->context->currency->id, false, $this->context->customer->secure_key);
 
+			elseif($this->state >0 && $validate === false)
+				$paid = $this->module->validateOrder((int)$this->context->cart->id, _PS_OS_ERROR_, (float)$this->context->cart->getOrderTotal(true, 3), $this->module->displayName, $this->module->l('reference').': '.$this->ref_num , array(),(int)$this->context->currency->id, false, $this->context->customer->secure_key);
+
 			$this->context->cookie->__unset("RefId");
 			$this->context->cookie->__unset("amount");
 
-            if($paid)
+            if(isset($paid) && $paid)
                 Tools::redirectLink(__PS_BASE_URI__.'order-confirmation.php?key='.$this->context->customer->secure_key.'&id_cart='.(int)$this->context->cart->id.'&id_module='.(int)$this->module->id.'&id_order='.(int)$this->module->currentOrder.'&res_num='.$this->res_num.'&ref_num='.$this->ref_num);
 		}
 		$this->assignTpl();
@@ -72,7 +75,8 @@ class iBazPardakhtValidationModuleFrontController extends ModuleFrontController
             'ver' => $this->module->version,
             'ref_num' => $this->ref_num,
             'res_num' => $this->res_num,
-		));
+			'path' => $this->module->displayName
+	));
 		return $this->setTemplate('validation.tpl');
 	}
 	
