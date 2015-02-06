@@ -22,7 +22,7 @@ class iBazPardakht extends PaymentModule
 	public function __construct(){  
 		$this->name = 'ibazpardakht';
 		$this->tab = 'payments_gateways';
-		$this->version = '1.1';
+		$this->version = '1.2';
 		$this->bootstrap = true;
 		$this->author = 'iPresta.ir';
 
