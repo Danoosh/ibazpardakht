@@ -33,10 +33,11 @@ $_MODULE['<{ibazpardakht}prestashop>validation_64430ad2835be8ad60c59e7d44e4b0b1'
 $_MODULE['<{ibazpardakht}prestashop>validation_accea76d09b0193c332cf51c646a205c'] = 'جزئیات پرداخت';
 $_MODULE['<{ibazpardakht}prestashop>validation_1e63d1811556fc2dad106dcbd4217a69'] = 'شناسه پرداخت';
 $_MODULE['<{ibazpardakht}prestashop>validation_3fc71dd40e944ff16ef8efdbff762ab3'] = 'مرجع پرداخت:';
-$_MODULE['<{ibazpardakht}prestashop>confirmation_e2a843402c11babc2b6ccccdbd0111e4'] = 'درگاه پرداخت بازپرداخت';
-$_MODULE['<{ibazpardakht}prestashop>confirmation_2e2117b7c81aa9ea6931641ea2c6499f'] = 'سفارش شما در';
-$_MODULE['<{ibazpardakht}prestashop>confirmation_75fbf512d744977d62599cc3f0ae2bb4'] = 'کامل شد';
-$_MODULE['<{ibazpardakht}prestashop>confirmation_e6dc7945b557a1cd949bea92dd58963e'] = 'سفارش شما به زودی ارسال می شود.';
-$_MODULE['<{ibazpardakht}prestashop>confirmation_0db71da7150c27142eef9d22b843b4a9'] = 'برای اطلاعات بیشتر یا برای هر سوالی با';
-$_MODULE['<{ibazpardakht}prestashop>confirmation_64430ad2835be8ad60c59e7d44e4b0b1'] = 'پشتیبانی مشتریان تماس بگیرید.';
+$_MODULE['<{ibazpardakht}prestashop>confirmation_88526efe38fd18179a127024aba8c1d7'] = 'پرداخت شما در %s کامل شد.';
+$_MODULE['<{ibazpardakht}prestashop>confirmation_d3bc04268cf524183a3fa18586296bcd'] = 'شماره سفارش شما';
+$_MODULE['<{ibazpardakht}prestashop>confirmation_45ac841090e4cc2fb46cb79a8d7928dd'] = 'شناسه سفارش شما';
+$_MODULE['<{ibazpardakht}prestashop>confirmation_19c419a8a4f1cd621853376a930a2e24'] = 'یک ایمیل با این اطلاعات برای شما ارسال شده است.';
+$_MODULE['<{ibazpardakht}prestashop>confirmation_d6e9622ef448eee5b08e5196fc492166'] = 'سفارش شما به زودی ارسال می شود.';
+$_MODULE['<{ibazpardakht}prestashop>confirmation_ca7e41a658753c87973936d7ce2429a8'] = 'اگر سوالی دارید میتوانید از ما بپرسید.';
+$_MODULE['<{ibazpardakht}prestashop>confirmation_66fcf4c223bbf4c7c886d4784e1f62e4'] = 'تماس با پشتیبانی تخصصی مشتریان';
 $_MODULE['<{ibazpardakht}prestashop>payment_45897b508bd1f04cf81c25a65f6aa0be'] = 'پرداخت با کارت های اعتباری عضو شتاب توسط درگاه واسط بازپرداخت.';
