@@ -22,7 +22,7 @@ class iBazPardakht extends PaymentModule
 	public function __construct(){  
 		$this->name = 'ibazpardakht';
 		$this->tab = 'payments_gateways';
-		$this->version = '1.2';
+		$this->version = '1.3';
 		$this->bootstrap = true;
 		$this->author = 'iPresta.ir';
 
@@ -169,7 +169,7 @@ class iBazPardakht extends PaymentModule
         {
             $ch = curl_init();
             curl_setopt($ch,CURLOPT_URL,$this->_service_url);
-            curl_setopt($ch,CURLOPT_POSTFIELDS,"id=".$id."&amount=".(int)($amount / 10)."&callback=".$callback."&resnum=".$res_num);
+            curl_setopt($ch,CURLOPT_POSTFIELDS,"id=".$id."&amount=".(int)($amount / 10)."&callback=".urlencode($callback)."&resnum=".$res_num);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
             curl_setopt($ch,CURLOPT_RETURNTRANSFER,true);
             $result = curl_exec($ch);
